@@ -1,6 +1,6 @@
 'use strict'
 
-
+import 'module-alias/register';
 import AutoLoad from '@fastify/autoload';
 import cors from '@fastify/cors';
 import fastify, { type FastifyInstance, type FastifyPluginOptions } from 'fastify';
