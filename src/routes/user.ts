@@ -2,7 +2,7 @@ import { JWTService } from "@/lib/jwt";
 import { userCreateJsonSchema, userLoginJsonSchema } from "@/lib/schemas/user.schema";
 import { UserCreateData } from "@/lib/types";
 import { authenticate } from "@/middleware/auth";
-import { User } from "@/models/User";
+import { User } from "@models/User";
 import { UserService } from "@/services/user.service";
 import type { FastifyInstance, FastifyPluginAsync, FastifyPluginOptions, FastifyReply, FastifyRequest } from "fastify"
 

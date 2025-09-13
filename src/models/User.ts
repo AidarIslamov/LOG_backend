@@ -25,6 +25,7 @@ export class User extends Model {
     @Column(DataType.STRING(50))
     role!: string;
 
+
     @AllowNull(false)
     @Column(DataType.STRING)
     password!: string
@@ -36,11 +37,4 @@ export class User extends Model {
 
     @BelongsToMany(() => Round, () => RoundPlayer)
     rounds!: Round[]
-
-
-
-    //     public async checkPassword(plainPassword: string) {
-    //         return await compare(plainPassword, this.password)
-    //     }
 }
-

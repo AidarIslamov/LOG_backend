@@ -36,9 +36,14 @@ export class Round extends Model {
     @HasMany(() => RoundPlayer)
     roundPlayers!: RoundPlayer[];
 
-
+    
     @BelongsToMany(() => User, () => RoundPlayer)
     users!: User[]
+
+    declare addUser: (user: User | string, options?: any) => Promise<void>;
+    declare addUsers: (users: (User | string)[], options?: any) => Promise<void>;
+    declare hasUser: (user: User | string) => Promise<boolean>;
+    declare countUsers: (options?: any) => Promise<number>;
 
     @Column(DataType.VIRTUAL)
     get isActive(): boolean {

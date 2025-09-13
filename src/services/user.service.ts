@@ -1,5 +1,5 @@
 import { UserCreateData, UserLoginData } from "@/lib/types";
-import { User } from "@/models/User";
+import { User } from "@models/User";
 import { compareSync, hashSync } from "bcrypt-ts";
 import transliterate from '@sindresorhus/transliterate';
 import dotenv from 'dotenv';

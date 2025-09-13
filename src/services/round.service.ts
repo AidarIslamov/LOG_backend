@@ -1,5 +1,6 @@
 import { RoundCreateData } from "@/lib/types";
-import { Round } from "@/models/Round";
+import { User } from "@models/User";
+import { Round } from "@models/Round";
 
 export class RoundService {
 
@@ -12,5 +13,22 @@ export class RoundService {
         });
 
         return round;
+    }
+
+    static addUserToRound(uid:string, user: User, cb: (error?: string) => void) {
+        Round.findByPk(uid)
+        .then((round: Round | null) => {
+            if(round) {
+                if(user.role === 'admin' || round.isActive) {
+                    round.addUser(user).then(() => cb())
+                } else {
+                    cb('Round is not active');
+                }
+            } else {
+                cb('Round not found');
+            }      
+        });
+
+        
     }
 }
