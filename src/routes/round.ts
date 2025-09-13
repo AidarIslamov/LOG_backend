@@ -9,7 +9,7 @@ import { RoundCreateData } from "@/lib/types";
 const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, opts: FastifyPluginOptions) {
 
     fastify.get('/round/:uid', async (request: FastifyRequest<{ Params: { uid: string } }>, reply: FastifyReply) => {
-        return Round.findAll({
+        return Round.findOne({
             include: 'users',
             where: { id: request.params.uid }
         }).catch(() => ({ error: 'Not Found' }))
