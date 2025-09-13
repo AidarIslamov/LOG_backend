@@ -7,6 +7,11 @@ import { RoundPlayer } from "./RoundPlayer";
 @Table({
     defaultScope: {
         attributes: { exclude: ['password'] },
+    },
+    scopes: {
+        withPassword: {
+            attributes: { include: ['password'] }
+        }
     }
 })
 export class User extends Model {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { userCreateSchema } from "./schemas/user.schema";
+import { userCreateSchema, userLoginSchema } from "./schemas/user.schema";
 import { roundCreateSchema } from "./schemas/round.schema";
 import { JWTPayload } from '@/lib/jwt';
 
@@ -23,4 +23,5 @@ interface CookieOptions {
 }
 
 export type UserCreateData = z.infer<typeof userCreateSchema>;
+export type UserLoginData = z.infer<typeof userLoginSchema>;
 export type RoundCreateData = z.infer<typeof roundCreateSchema> & {endAt: string;}
