@@ -43,8 +43,12 @@ const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, 
             if(request.user?.role !== 'admin') {
                 throw new Error('You not have enough permissions');
             }
+            const user = await User.findByPk(request.user.id);
+             if (!user) {
+                throw new Error('Unknown user');
+            }
             const roundData = request.body;
-            const round = RoundService.createRound(roundData)
+            const round = RoundService.createRound(roundData, user)
             return round
         }
     }),
