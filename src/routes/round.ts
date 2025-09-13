@@ -32,7 +32,9 @@ const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, 
                 throw new Error('Start date must be at least from now');
             }
 
-            (request as any).body.endAt = new Date(inputDate.setSeconds(inputDate.getSeconds() + duration + cooldown));
+            const endAt = new Date(inputDate.getTime() + (duration + cooldown) * 1000);
+
+            (request as any).body.endAt = endAt;
         },
         handler: async (request: FastifyRequest<{Body: RoundCreateData}>, reply: FastifyReply) => {
             const roundData = request.body;

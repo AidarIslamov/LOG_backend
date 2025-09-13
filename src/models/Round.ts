@@ -48,14 +48,18 @@ export class Round extends Model {
 
     @Column(DataType.VIRTUAL)
     get isInCoolDown(): boolean {
-        const cooldownEnd = new Date(this.cooldown * 1000);
-        return cooldownEnd < new Date()
+       if (!this.isActive) return false;
+        
+        const now = new Date();
+        const cooldownEnd = new Date(this.startAt.getTime() + this.cooldown * 1000);
+        
+        return now >= this.startAt && now <= cooldownEnd;
     }
 
     @BeforeValidate
     static setEndAt(round: Round) {
-        if (round.startAt && round.duration) {
-            round.endAt = new Date(round.startAt.getTime() + round.duration * 1000);
-        }
+    if (round.startAt && round.duration && !round.endAt) {
+        round.endAt = new Date(round.startAt.getTime() + round.duration * 1000);
     }
+}
 }
