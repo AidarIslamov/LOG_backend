@@ -37,12 +37,16 @@ const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, 
             })
         }
     })
-    fastify.get('/round', async (request, reply) => {
-        return Round.findAll({
-            include: 'users',
-            order: [['createdAt', 'DESC'], ['startAt', 'DESC']]
-        })
+    fastify.get('/round', {
+        preHandler: authenticate,
+        handler: async (request, reply) => {
+            return Round.findAll({
+                include: 'users',
+                order: [['createdAt', 'DESC'], ['startAt', 'DESC']]
+            })
+        }
     })
+
     fastify.post('/round', {
         schema: {
             body: roundCreateJsonSchema // TODO: improve validation error messages
