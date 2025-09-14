@@ -22,6 +22,11 @@ export class RoundPlayer extends Model {
     @Default(0)
     @Column
     score!: number
+
+    @AllowNull(false)
+    @Default(0)
+    @Column
+    action_count!: number
     
     @BelongsTo(() => User)
     user!: User

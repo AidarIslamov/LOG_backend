@@ -2,7 +2,8 @@ import { RoundCreateData } from "@/lib/types";
 import { User } from "@models/User";
 import { Round } from "@models/Round";
 import { RoundPlayer } from "@/models/RoundPlayer";
-import { Sequelize } from "sequelize-typescript";
+import { QueryTypes, Sequelize } from 'sequelize';
+import { sequelize } from "@/config/database";
 
 export class RoundService {
 
@@ -38,6 +39,8 @@ export class RoundService {
             });
     }
 
+
+    // Variant withot ttransactions and blocks. Single query. Data always actual, because before SET - use old data, then update data (i mean action_count)
     static voteAction(uid:string, user: User, cb: ({error, status, score } : {error?: string, status?: string, score?: number}) => void) {
         Round.scope(['active'])
             .findByPk(uid)
@@ -46,26 +49,31 @@ export class RoundService {
                     if(user.role === 'nikita') { // I hope Nikita doesn't find out about this.
                         cb({status: 'prevented'})
                     } else {
-                        RoundPlayer.update(
-                            { 
-                                score: Sequelize.literal('"score" + 1') 
-                            },
-                            {
-                                where: { 
-                                    user_id: user.id, 
-                                    round_id: uid 
+                        const tableName = `"${RoundPlayer.tableName}"`;
+                       
+                        sequelize.query(
+                                `UPDATE ${tableName} 
+                                SET 
+                                    score = score + (
+                                    CASE 
+                                        WHEN (action_count + 1) % 11 = 0 THEN 10 
+                                        ELSE 1 
+                                    END
+                                    ),
+                                    action_count = action_count + 1
+                                WHERE user_id = :userId AND round_id = :roundId
+                                RETURNING score, action_count`,
+                                {
+                                    replacements: { userId: user.id, roundId: uid },
+                                    type: 'UPDATE'
                                 }
-                            }
-                        ).then(([affectedCount]) => {
-                            if(affectedCount !== 0) {
-                                    RoundPlayer.findOne({
-                                        where: { user_id: user.id, round_id: uid },
-                                        attributes: ['score']
-                                    }).then((roundPlayer: RoundPlayer | null) => {
-                                        cb({status: 'setted', score: roundPlayer?.score ?? 0})
-                                    })
-                            }
-                        });
+                            ).then(([result]) => {
+                                const score = (result as any[])?.[0]?.score ?? 0;
+                                cb({ status: 'setted', score });
+                            }).catch(error => {
+                                console.error('Update error:', error);
+                                cb({ status: 'error', score: 0 });
+                            });
                     }
                 } else {
                         cb({error: 'Round not exist or not active'});
