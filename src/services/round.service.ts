@@ -17,19 +17,19 @@ export class RoundService {
         return round;
     }
 
-    static addUserToRound(uid:string, user: User, cb: (error?: string) => void) {
+    static getRound(uid:string, user: User, cb: ({round, message}: {round?: Round, message?: string}) => void) {
         Round.findByPk(uid)
-        .then((round: Round | null) => {
-            if(round) {
-                if(user.role === 'admin' || round.isActive) {
-                    round.addUser(user).then(() => cb())
+            .then((round: Round | null) => {
+                if(round) {
+                    if(round.isActive) {
+                        round.addUser(user).then(() => cb({round, message: 'User added to round'}))
+                    } else {
+                        cb({round, message: 'Round is not active'});
+                    }
                 } else {
-                    cb('Round is not active');
-                }
-            } else {
-                cb('Round not found');
-            }      
-        });
+                    cb({message: 'Round not found'});
+                }      
+            });
 
         
     }
