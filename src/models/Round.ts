@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
-import { AllowNull, BeforeValidate, BelongsToMany, Column, DataType, HasMany, Model, PrimaryKey, Table } from "sequelize-typescript";
+import { AllowNull, BeforeValidate, BelongsToMany, Column, DataType, HasMany, Model, PrimaryKey, Table, Sequelize } from "sequelize-typescript";
+import { Op } from 'sequelize';
 import { RoundPlayer } from "./RoundPlayer";
 import { User } from './User';
+
 
 dotenv.config()
 
@@ -13,6 +15,19 @@ dotenv.config()
                 association: 'roundPlayers',
                 include: ['user']
             }]
+        },
+        active: {
+            where: {
+                [Op.and]: [
+                    { startAt: {[Op.lt]: Sequelize.fn('NOW')}},
+                    { endAt: { [Op.gt]: Sequelize.fn('NOW') } },
+                    Sequelize.where(
+                        Sequelize.literal(`"startAt" + INTERVAL '1 second' * "cooldown"`),
+                        Op.lt,
+                        Sequelize.fn('NOW')
+                    )
+                ]
+            }
         }
     }
 })

@@ -8,6 +8,8 @@ import { RoundCreateData } from "@/lib/types";
 import { authenticate } from "@/middleware/auth";
 import { User } from "@models/User";
 
+
+// TODO: Improve error handling
 const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, opts: FastifyPluginOptions) {
 
     fastify.get('/round/:uid', {
@@ -73,7 +75,31 @@ const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, 
     })
 
     // Game actions
+    fastify.post('/round/:uid/vote', {
+        preHandler: authenticate,
+        handler: async(request: FastifyRequest<{ Params: { uid: string } }>, reply: FastifyReply) => {
+                if(!request.user) {
+                    throw new Error('User authentication required');
+                }
+                const user = await User.findByPk(request.user.id);
+                if (!user) {
+                    throw new Error('Unknown user');
+                }
 
+                await new Promise<void>((resolve) => {
+                    const cb = ({error, status, score } : {error?: string, status?: string, score?: number}) => {
+                        if(error) {
+                            reply.send({success: false, error})
+                        } else {
+                            reply.send({success: true, score, status});
+                        }
+                        resolve();
+                    }
+                    RoundService.voteAction(request.params.uid, user, cb); 
+                })
+                
+        }
+    })
         
 }
 
