@@ -2,7 +2,6 @@ import { RoundCreateData } from "@/lib/types";
 import { User } from "@models/User";
 import { Round } from "@models/Round";
 import { RoundPlayer } from "@/models/RoundPlayer";
-import { QueryTypes, Sequelize } from 'sequelize';
 import { sequelize } from "@/config/database";
 
 export class RoundService {
@@ -40,7 +39,23 @@ export class RoundService {
     }
 
 
-    // Variant withot ttransactions and blocks. Single query. Data always actual, because before SET - use old data, then update data (i mean action_count)
+    /**
+     * Variant withot ttransactions and blocks.
+     * Single query. 
+     * Data always actual, because before SET - use old data, then update data (i mean action_count)
+     * 
+     * Disadvantages of this approach:
+     *  - Database-specific solution - tailored for a particular database (syntax), in this case PostgreSQL
+     *  - ORM not used - not always convenient
+     *  - Error handling is complex
+     * 
+     * Advantages:
+     *  - Performance
+     * 
+     * 
+     * If need pissimistic lock, using ORM, uncommit lines on 101...
+     * 
+     */
     static voteAction(uid:string, user: User, cb: ({error, status, score } : {error?: string, status?: string, score?: number}) => void) {
         Round.scope(['active'])
             .findByPk(uid)
@@ -82,4 +97,51 @@ export class RoundService {
                 // console.error(error);
             });
     }
+
+    // static async voteAction(uid: string, user: User, cb: ({error, status, score} : {error?: string, status?: string, score?: number}) => void) {
+    //     if (user.role === 'nikita') {
+    //         return cb({ status: 'prevented' });
+    //     }
+
+    //     const round = await Round.scope(['active']).findByPk(uid);
+    //     if (!round) {
+    //         return cb({ error: 'Round not exist or not active' });
+    //     }
+
+    //     const transaction = await sequelize.transaction();
+        
+    //     try {
+    //         const roundPlayer = await RoundPlayer.findOne({
+    //             where: {
+    //                 user_id: user.id,
+    //                 round_id: uid
+    //             },
+    //             transaction,
+    //             lock: transaction.LOCK.UPDATE
+    //         });
+
+    //         let score = 0;
+
+    //         if (roundPlayer) {
+    //             const oldActionCount = roundPlayer.action_count;
+    //             const increment = (oldActionCount + 1) % 11 === 0 ? 10 : 1;
+                
+    //             score = roundPlayer.score + increment;
+                
+    //             await roundPlayer.update({
+    //                 score,
+    //                 action_count: oldActionCount + 1
+    //             }, { transaction });
+    //         }
+    //         await transaction.commit();
+    //         return cb({ 
+    //             status: 'setted', 
+    //             score 
+    //         });
+
+    //     } catch (error) {
+    //         await transaction.rollback();
+    //         cb({ status: 'error', score: 0 });
+    //     }
+    // }
 }
