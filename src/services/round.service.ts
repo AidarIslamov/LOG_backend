@@ -18,7 +18,11 @@ export class RoundService {
     }
 
     static getRound(uid:string, user: User, cb: ({round, message}: {round?: Round, message?: string}) => void) {
-        Round.findByPk(uid)
+        Round.scope('withTotals').findOne({
+            where: {
+                id: uid
+            },
+        })
             .then((round: Round | null) => {
                 if(round) {
                     if(round.isActive) {

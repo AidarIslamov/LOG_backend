@@ -6,7 +6,16 @@ import { User } from './User';
 dotenv.config()
 
 
-@Table
+@Table({
+    scopes: {
+        withTotals: {
+            include: [{
+                association: 'roundPlayers',
+                include: ['user']
+            }]
+        }
+    }
+})
 export class Round extends Model {
 
     @PrimaryKey
@@ -59,6 +68,41 @@ export class Round extends Model {
         const cooldownEnd = new Date(this.startAt.getTime() + this.cooldown * 1000);
         
         return now >= this.startAt && now <= cooldownEnd;
+    }
+
+    @Column(DataType.VIRTUAL)
+    get isFinished() {
+        if (this.isActive) return false;
+        return new Date() > new Date(this.endAt)
+    }
+
+    @Column(DataType.VIRTUAL)
+    get totals() {
+        if (!this.roundPlayers || !Array.isArray(this.roundPlayers)) {
+            return null;
+        }
+
+        const now = new Date();
+        if(now < new Date(this.endAt)) {
+            return { totalScore: 0, winner: null };
+        }
+        
+        const totalScore = this.roundPlayers.reduce((total, rp) => total + (rp.score || 0), 0);
+        
+        let winner = null;
+        if (this.roundPlayers.length > 0) {
+            const winnerPlayer = this.roundPlayers.reduce((prev, current) => 
+                (prev.score > current.score) ? prev : current
+            );
+            winner = {
+                user: {
+                    name: winnerPlayer.user?.name || 'Unknown',
+                    score: winnerPlayer.score || 0
+                }
+            };
+        }
+        
+        return { totalScore, winner };
     }
 
     @BeforeValidate

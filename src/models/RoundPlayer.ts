@@ -1,7 +1,6 @@
-import { AllowNull, BelongsTo, Column, DataType, ForeignKey, Model, Table } from "sequelize-typescript";
+import { AllowNull, BelongsTo, Column, DataType, Default, ForeignKey, Model, Table } from "sequelize-typescript";
 import { Round } from "./Round";
 import { User } from "./User";
-
 
 @Table
 export class RoundPlayer extends Model {
@@ -19,7 +18,11 @@ export class RoundPlayer extends Model {
     @Column
     user_id!: number;
 
-
+    @AllowNull(false)
+    @Default(0)
+    @Column
+    score!: number
+    
     @BelongsTo(() => User)
     user!: User
 }
