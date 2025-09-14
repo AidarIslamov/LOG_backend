@@ -68,7 +68,7 @@ export class RoundService {
                         });
                     }
                 } else {
-                        cb({error: 'Round not found'});
+                        cb({error: 'Round not exist or not active'});
                     } 
             }).catch(error => {
                 // console.error(error);

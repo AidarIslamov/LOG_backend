@@ -38,8 +38,8 @@
     "typescript": "^5.9.2"
   },
   "_moduleAliases": {
-    "@models": "dist/models",
-    "@config": "dist/config",
-    "@lib": "dist/lib"
+    "@models": "src/models",
+    "@config": "src/config",
+    "@lib": "src/lib"
   }
 }
