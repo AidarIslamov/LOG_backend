@@ -47,7 +47,7 @@ server.register(cors, {
 
 const startServer = async () => {
   initializeDB();
-  server.listen({ port: 8080, host: '0.0.0.0' }, (err, address) => {
+  server.listen({ port: 8888, host: 'localhost' }, (err, address) => {
     if (err) {
       server.log.error(err);
       process.exit(1);
