@@ -16,12 +16,17 @@ cp .env.example .env
 
 3. Заполните переменные в файле `.env`
 
-4. Сборка
+4. Запустите базу данных
+```bash
+docker-compose up -d
+```
+
+5. Сборка
 ```bash
 npm run build
 ```
 
-5. Запустите
+6. Запустите
 ```bash
 npm run start
 ```
