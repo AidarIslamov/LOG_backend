@@ -7,47 +7,52 @@ dotenv.config()
 
 
 export class UserService {
-    static createUserThen(data: UserCreateData, cb: (user: User | null, result: boolean) => void) {
+    static async createUser(data: UserCreateData): Promise<{user: User |null, success: boolean, created?:boolean}> {
+        try {
+            const salt = this.getSalt();
+            const hashedPassword = hashSync(data.password, salt);
+            const role = transliterate(data.name.toLowerCase());
 
-        const salt = this.getSalt();
-        const hashedPassword = hashSync(data.password, salt);
-        const role = transliterate(data.name.toLowerCase())
-        
-        User.findOrCreate({
-            where: { name: data.name },
-            defaults: {
-                name: data.name,
-                password: hashedPassword,
-                agreement: data.agreement,
-                role: role
-            },
-        }).then(([user, result]) => {
+            const [user, created ] = await User.findOrCreate({
+                where: { name: data.name },
+                defaults: {
+                    name: data.name,
+                    password: hashedPassword,
+                    agreement: data.agreement,
+                    role: role
+                },
+            });
+
             const { password, ...userWithoutPassword } = user.toJSON();
-            cb(userWithoutPassword, result);
-        }).catch(error => {
-            cb(null, false);
-        });
-        
+            return { user: userWithoutPassword as User, success: true, created  };
+
+        } catch (error) {
+            return { user: null, success: false };
+        }
     }
 
-    static authUserThen(data: UserLoginData, cb: (user: User | null, result: boolean) => void) {
-        User.scope('withPassword').findOne({
+    static async authUser(data: UserLoginData) {
+       try {
+        const user = await User.scope('withPassword').findOne({
             where: { name: data.name }
-        }).then((user) => {
-            if (!user) {
-                return cb(null, false);
-            }
-            const { password, ...userWithoutPassword } = user.toJSON();
-            const isValid = compareSync(data.password, password);
-
-            if (isValid) {
-                cb(userWithoutPassword, true);
-            } else {
-                cb(null, false);
-            }
-        }).catch(error => {
-            cb(null, false);
         });
+
+        if (!user) {
+            return { user: null, success: false };
+        }
+
+        const isValid = compareSync(data.password, user.password);
+        if (!isValid) {
+            return { user: null, success: false };
+        }
+
+        const { password, ...userWithoutPassword } = user.toJSON();
+        return { user: userWithoutPassword as User, success: true };
+
+    } catch (error) {
+        console.error('Auth user error:', error);
+        return { user: null, success: false };
+    }
     }
 
     private static getSalt() {

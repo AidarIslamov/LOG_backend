@@ -37,45 +37,52 @@ const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, 
                 }
             },
             handler: async (request: FastifyRequest<{ Body: UserCreateData }>, reply: FastifyReply) => {
-                await new Promise<void>((resolve) => {
-                    const cb = (user: User | null, result: boolean) => {
-                        try {
-                            if (!result || !user) {
-                                reply.code(409).send({
-                                    statusCode: 409,
-                                    error: 'Conflict',
-                                    message: 'User already exists'
-                                });
-                            } else {
-                                const token = JWTService.sign({
-                                    id: user.id,
-                                    name: user.name,
-                                    role: user.role,
-                                });
-                                reply.setCookie('token', token, {
-                                    httpOnly: true,
-                                    secure: true,
-                                    sameSite: 'strict',
-                                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                                    path: '/',
-                                });
-                                reply.code(200).send({
-                                    message: 'User created successfully',
-                                    user: user
-                                });
-                            }
-                            resolve();
-                        } catch (error) {
-                            reply.code(500).send({
+                    try {
+                        const result = await UserService.createUser(request.body);
+                        
+                        if (!result.user) {
+                            return reply.code(500).send({
                                 statusCode: 500,
-                                error: 'Internal Server Error',
-                                message: 'Internal server error'
+                                error: 'Internal Server Error', 
+                                message: 'Failed to create user'
                             });
-                            resolve();
                         }
+
+                        // if (!result.created) {
+                        //     return reply.code(409).send({
+                        //         statusCode: 409,
+                        //         error: 'Conflict',
+                        //         message: 'User already exists'
+                        //     });
+                        // }
+
+                        const token = JWTService.sign({
+                            id: result.user.id,
+                            name: result.user.name,
+                            role: result.user.role,
+                        });
+
+                        reply.setCookie('token', token, {
+                            httpOnly: true,
+                            secure: true,
+                            sameSite: 'strict',
+                            maxAge: 7 * 24 * 60 * 60 * 1000,
+                            path: '/',
+                        });
+
+                        reply.code(201).send({
+                            message: 'User created successfully',
+                            user: result.user
+                        });
+
+                    } catch (error) {
+                        console.error('Signup error:', error);
+                        reply.code(500).send({
+                            statusCode: 500,
+                            error: 'Internal Server Error',
+                            message: 'Internal server error'
+                        });
                     }
-                    UserService.createUserThen(request.body, cb);
-                });
             }
         }),
         fastify.post('/login', {
@@ -83,45 +90,44 @@ const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, 
                 body: userLoginJsonSchema
             },
             handler: async (request: FastifyRequest<{ Body: UserCreateData }>, reply: FastifyReply) => {
-                await new Promise<void>((resolve) => {
-                    const cb = (user: User | null, result: boolean) => {
-                        try {
-                            if (!result || !user) {
-                                reply.code(401).send({
-                                    statusCode: 401,
-                                    error: 'User not found',
-                                    message: "Incorrect name or password, please try again"
-                                });
-                            } else {
-                                const token = JWTService.sign({
-                                    id: user.id,
-                                    name: user.name,
-                                    role: user.role,
-                                });
-                                reply.setCookie('token', token, {
-                                    httpOnly: true,
-                                    secure: true,
-                                    sameSite: 'strict',
-                                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                                    path: '/',
-                                });
-                                reply.code(200).send({
-                                    message: 'Login successfully',
-                                    user: user
-                                });
-                            }
-                            resolve();
-                        } catch (error) {
-                            reply.code(500).send({
-                                statusCode: 500,
-                                error: 'Internal Server Error',
-                                message: 'Internal server error'
-                            });
-                            resolve();
-                        }
+                try {
+                    const result = await UserService.authUser(request.body);
+                    
+                    if (!result.success || !result.user) {
+                        return reply.code(401).send({
+                            statusCode: 401,
+                            error: 'Unauthorized',
+                            message: "Incorrect name or password, please try again"
+                        });
                     }
-                    UserService.authUserThen(request.body, cb);
-                });
+
+                    const token = JWTService.sign({
+                        id: result.user.id,
+                        name: result.user.name,
+                        role: result.user.role,
+                    });
+
+                    reply.setCookie('token', token, {
+                        httpOnly: true,
+                        secure: true,
+                        sameSite: 'strict',
+                        maxAge: 7 * 24 * 60 * 60 * 1000,
+                        path: '/',
+                    });
+
+                    reply.code(200).send({
+                        message: 'Login successful',
+                        user: result.user
+                    });
+
+                } catch (error) {
+                    console.error('Login error:', error);
+                    reply.code(500).send({
+                        statusCode: 500,
+                        error: 'Internal Server Error',
+                        message: 'Internal server error'
+                    });
+                }
             }
         }),
         fastify.get('/logout', {

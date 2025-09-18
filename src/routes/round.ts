@@ -9,32 +9,42 @@ import { authenticate } from "@/middleware/auth";
 import { User } from "@models/User";
 
 
-// TODO: Improve error handling
 const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, opts: FastifyPluginOptions) {
 
     fastify.get('/round/:uid', {
         preHandler: authenticate,
         handler: async (request: FastifyRequest<{ Params: { uid: string } }>, reply: FastifyReply) => {
-            if(!request.user) {
-                throw new Error('User authentication required');
-            }
-            const user = await User.findByPk(request.user.id);
-            if (!user) {
-                throw new Error('Unknown user');
-            }
-
-            await new Promise<void>((resolve) => {
-                const cb = ({round, message}: {round?: Round, message?: string}) => {
-                    reply
-                        .code(200)
-                        .send({
-                            round,
-                            message
-                        });
-                    resolve();
+            try {
+                if(!request.user) {
+                    return reply.status(401).send({ 
+                        success: false, 
+                        message: 'User authentication required' 
+                    })
                 }
-                RoundService.getRound(request.params.uid, user, cb)
-            })
+                const user = await User.findByPk(request.user.id);
+                if (!user) {
+                    return reply.status(404).send({ 
+                        success: false, 
+                        message: 'User not found' 
+                    });
+                }
+
+                const result = await RoundService.getRound(request.params.uid, user);
+                if (result.success && result.round) {
+                    reply.send({ round: result.round, message: result.message });
+                } else {
+                    reply.status(404).send({ 
+                        success: false, 
+                        message: result.message 
+                    });
+                } 
+
+            } catch (error) {
+                reply.status(500).send({ 
+                    success: false, 
+                    message: 'Internal server error' 
+                });
+            }
         }
     })
     fastify.get('/round', {
@@ -73,7 +83,7 @@ const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, 
                 throw new Error('Unknown user');
             }
             const roundData = request.body;
-            const round = RoundService.createRound(roundData, user)
+            const round = await RoundService.createRound(roundData, user)
             return round
         }
     })
@@ -90,18 +100,12 @@ const rootRoute: FastifyPluginAsync = async function (fastify: FastifyInstance, 
                     throw new Error('Unknown user');
                 }
 
-                await new Promise<void>((resolve) => {
-                    const cb = ({error, status, score } : {error?: string, status?: string, score?: number}) => {
-                        if(error) {
-                            reply.send({success: false, error})
-                        } else {
-                            reply.send({success: true, score, status});
-                        }
-                        resolve();
-                    }
-                    RoundService.voteAction(request.params.uid, user, cb); 
-                })
-                
+                const result = await RoundService.voteAction(request.params.uid, user);     
+                if (result.error) {
+                    reply.send({ success: false, error: result.error });
+                } else {
+                    reply.send({ success: true, score: result.score, status: result.status });
+                }           
         }
     })
         
